@@ -1,0 +1,28 @@
+name: Kompiluj PdfCraft PL (Windows)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+
+      - name: Zainstaluj Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Pobierz modele bazowe
+        run: cargo xtask models
+
+      - name: Kompiluj pdfcraft.exe i pdfcraft-cli.exe
+        run: cargo build --release -p pdfcraft -p pdfcraft-cli
+
+      - name: Udostepnij gotowe pliki EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfcraft-pl-windows
+          path: |
+            target/release/pdfcraft.exe
+            target/release/pdfcraft-cli.exe

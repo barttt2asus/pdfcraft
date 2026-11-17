@@ -1,0 +1,53 @@
+name: Kompiluj PdfCraft PL (Windows)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: 1. Pobierz kod z repozytorium
+        uses: actions/checkout@v4
+        with:
+          ref: pl-ocr
+
+      - name: 2. Dodaj jezyk polski (pl) do kodu z PR #3335
+        shell: pwsh
+        run: |
+          # Dodanie ("pl", "Polish") oraz mapowania Tesseracta "pol" w crates/ocr/src/lib.rs
+          $ocrFile = "crates/ocr/src/lib.rs"
+          $content = Get-Content $ocrFile -Raw
+          if ($content -notmatch '"Polish"') {
+            $content = $content -replace '\("en",\s*"English"\),', '("en", "English"), ("pl", "Polish"),'
+          }
+          if ($content -notmatch 'Some\("pol"\)') {
+            $content = $content -replace '"en"\s*\|\s*"eng"\s*=>\s*Some\("eng"\),', '"en" | "eng" => Some("eng"), "pl" | "pol" => Some("pol"),'
+          }
+          Set-Content $ocrFile $content -NoNewline
+
+          # Dodanie "pl" do schematow CLI/automatyzacji w crates/automation/src/
+          Get-ChildItem -Path "crates/automation/src" -Filter "*.rs" -Recurse | ForEach-Object {
+            $c = Get-Content $_.FullName -Raw
+            if ($c -match 'Document language' -and $c -notmatch '"pl"') {
+              $c = $c -replace '"enum":\s*\["en"', '"enum": ["en", "pl"'
+              Set-Content $_.FullName $c -NoNewline
+            }
+          }
+
+      - name: 3. Zainstaluj Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 4. Pobierz modele bazowe
+        run: cargo xtask models
+
+      - name: 5. Kompiluj pdfcraft.exe i pdfcraft-cli.exe
+        run: cargo build --release -p pdfcraft -p pdfcraft-cli
+
+      - name: 6. Udostepnij gotowe pliki EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfcraft-pl-windows
+          path: |
+            target/release/pdfcraft.exe
+            target/release/pdfcraft-cli.exe

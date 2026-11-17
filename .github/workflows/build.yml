@@ -1,4 +1,4 @@
-name: Kompiluj PdfCraft PL (Windows)
+name: Kompiluj PdfCraft PL v0.21.1 (Windows)
 
 on:
   workflow_dispatch:
@@ -7,30 +7,31 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: 1. Pobierz kod z repozytorium
+      - name: 1. Pobierz najnowszy PdfCraft v0.21.1 (z oryginalnego repozytorium)
         uses: actions/checkout@v4
         with:
-          ref: pl-ocr
+          repository: storytold/pdfcraft
+          ref: main
+          fetch-depth: 0
 
-      - name: 2. Dodaj jezyk polski (pl) do kodu z PR #3335
+      - name: 2. Wstrzyknij polski OCR i czcionke Unicode z Twojej galezi pl-ocr
         shell: pwsh
         run: |
-          # Dodanie ("pl", "Polish") oraz mapowania Tesseracta "pol" w crates/ocr/src/lib.rs
-          $ocrFile = "crates/ocr/src/lib.rs"
-          $content = Get-Content $ocrFile -Raw
-          if ($content -notmatch '"Polish"') {
-            $content = $content -replace '\("en",\s*"English"\),', '("en", "English"), ("pl", "Polish"),'
-          }
-          if ($content -notmatch 'Some\("pol"\)') {
-            $content = $content -replace '"en"\s*\|\s*"eng"\s*=>\s*Some\("eng"\),', '"en" | "eng" => Some("eng"), "pl" | "pol" => Some("pol"),'
-          }
-          Set-Content $ocrFile $content -NoNewline
-
-          # Dodanie "pl" do schematow CLI/automatyzacji w crates/automation/src/
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          # Pobierz Twoja wyedytowana galaz pl-ocr:
+          git fetch https://github.com/${{ github.repository }}.git pl-ocr:my-pl-ocr
+          
+          # Podmien modul OCR oraz czcionke Unicode (Inter) z Twojej galezi pl-ocr:
+          git checkout my-pl-ocr -- crates/ocr
+          git checkout my-pl-ocr -- crates/fonts
+          
+          # Odblokuj "pl" w najnowszym crates/automation (z wersji 0.21.1):
           Get-ChildItem -Path "crates/automation/src" -Filter "*.rs" -Recurse | ForEach-Object {
             $c = Get-Content $_.FullName -Raw
-            if ($c -match 'Document language' -and $c -notmatch '"pl"') {
-              $c = $c -replace '"enum":\s*\["en"', '"enum": ["en", "pl"'
+            if ($c -match '"enum":\s*\["en"\]') {
+              $c = $c -replace '"enum":\s*\["en"\]', '"enum": ["en", "pl"]'
               Set-Content $_.FullName $c -NoNewline
             }
           }
@@ -41,13 +42,13 @@ jobs:
       - name: 4. Pobierz modele bazowe
         run: cargo xtask models
 
-      - name: 5. Kompiluj pdfcraft.exe i pdfcraft-cli.exe
+      - name: 5. Kompiluj pdfcraft.exe i pdfcraft-cli.exe (v0.21.1)
         run: cargo build --release -p pdfcraft -p pdfcraft-cli
 
       - name: 6. Udostepnij gotowe pliki EXE
         uses: actions/upload-artifact@v4
         with:
-          name: pdfcraft-pl-windows
+          name: pdfcraft-0.21.1-pl-windows
           path: |
             target/release/pdfcraft.exe
             target/release/pdfcraft-cli.exe

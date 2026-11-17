@@ -26,8 +26,8 @@ pub const RECOGNITION_MODEL: &str = "text-recognition.onnx";
 /// `€`, which made a scanned "€250" read as "E250".
 pub const ALPHABET: &str = " 0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~€ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-/// Supported document languages (ISO 639-1). Hungarian requires native Tesseract.
-pub const LANGUAGES: &[(&str, &str)] = &[("en", "English"), ("pl", "Polish"), ("hu", "Hungarian")];
+/// Supported document languages (ISO 639-1). Polish requires native Tesseract.
+pub const LANGUAGES: &[(&str, &str)] = &[("en", "English"), ("pl", "Polish")];
 
 #[derive(Debug, thiserror::Error)]
 pub enum OcrError {
@@ -150,12 +150,12 @@ impl Ocr {
         }
     }
 
-    /// ISO 639-1 language selected by this recogniser, independent of the interface locale.
+/// ISO 639-1 language selected by this recogniser, independent of the interface locale.
     pub fn language(&self) -> &'static str {
         match &self.engine {
             Backend::English(_) => "en",
             #[cfg(not(target_arch = "wasm32"))]
-            Backend::Hungarian(_) => "hu",
+            Backend::Hungarian(_) => "pl",
         }
     }
 

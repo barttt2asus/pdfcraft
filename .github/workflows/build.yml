@@ -14,7 +14,7 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: 2. Wstrzyknij polski OCR i czcionke Unicode z Twojej galezi pl-ocr
+      - name: 2. Wstrzyknij polski OCR z Twojej galezi pl-ocr
         shell: pwsh
         run: |
           git config user.name "GitHub Actions"
@@ -23,9 +23,8 @@ jobs:
           # Pobierz Twoja wyedytowana galaz pl-ocr:
           git fetch https://github.com/${{ github.repository }}.git pl-ocr:my-pl-ocr
           
-          # Podmien modul OCR oraz czcionke Unicode (Inter) z Twojej galezi pl-ocr:
+          # Podmien TYLKO modul OCR z Twojej galezi pl-ocr:
           git checkout my-pl-ocr -- crates/ocr
-          git checkout my-pl-ocr -- crates/fonts
           
           # Odblokuj "pl" w najnowszym crates/automation (z wersji 0.21.1):
           Get-ChildItem -Path "crates/automation/src" -Filter "*.rs" -Recurse | ForEach-Object {
@@ -35,7 +34,7 @@ jobs:
               Set-Content $_.FullName $c -NoNewline
             }
           }
-
+            
       - name: 3. Zainstaluj Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
@@ -51,4 +50,4 @@ jobs:
           name: pdfcraft-0.21.1-pl-windows
           path: |
             target/release/pdfcraft.exe
-            target/release/pdfcraft-cli.exe
+            target/release/pdfcraft-cli.exe.

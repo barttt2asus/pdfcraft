@@ -1,0 +1,12 @@
+name: 1. Pobierz PR 3335 jako galaz pl-ocr
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  fetch-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git fetch https://github.com/storytold/pdfcraft.git pull/3335/head:pl-ocr
+          git push origin pl-ocr --force

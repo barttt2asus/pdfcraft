@@ -27,7 +27,7 @@ impl Tesseract {
         let mut cmd = Command::new(&t.executable);
         cmd.arg("--list-langs").stdin(Stdio::null());
         let languages = run(cmd, Duration::from_secs(10)).map_err(|e| error(format!("{SETUP}\n{e}")))?;
-        if !languages.lines().any(|l| l.trim() == "hun") {
+        if !languages.lines().any(|l| l.trim() == "pol") {
             return Err(error(SETUP));
         }
         Ok(t)
@@ -54,7 +54,7 @@ impl Tesseract {
         }
         input.seek(SeekFrom::Start(0)).map_err(error)?;
         let mut cmd = Command::new(&self.executable);
-        cmd.args(["stdin", "stdout", "-l", "hun", "--oem", "1", "--psm", "3", "-c", "tessedit_create_tsv=1"])
+        cmd.args(["stdin", "stdout", "-l", "pol", "--oem", "1", "--psm", "3", "-c", "tessedit_create_tsv=1"])
             .env("OMP_THREAD_LIMIT", "2")
             .stdin(Stdio::from(input));
         let output = run(cmd, Duration::from_secs(120))?;

@@ -138,14 +138,14 @@ impl Ocr {
         Self::load(&Models::find().ok_or(OcrError::NoModels)?)
     }
 
-    /// Select a recogniser without silently falling back to a different language.
+/// Select a recogniser without silently falling back to a different language.
     pub fn for_language(language: &str) -> Result<Self, OcrError> {
         match language {
             "en" => Self::find(),
             #[cfg(not(target_arch = "wasm32"))]
-            "hu" => Ok(Self { engine: Backend::Hungarian(tesseract::Tesseract::find()?) }),
+            "hu" | "pl" => Ok(Self { engine: Backend::Hungarian(tesseract::Tesseract::find()?) }),
             #[cfg(target_arch = "wasm32")]
-            "hu" => Err(OcrError::Recognize("Hungarian OCR requires the desktop app with Tesseract 5 and the hun language model".into())),
+            "hu" | "pl" => Err(OcrError::Recognize("Polish OCR requires the desktop app with Tesseract 5 and the pol language model".into())),
             _ => Err(OcrError::Recognize(format!("unsupported OCR language {language:?}"))),
         }
     }

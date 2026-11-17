@@ -1,4 +1,4 @@
-name: Kompiluj PdfCraft PL v0.21.1 (Windows)
+name: Kompiluj PdfCraft v0.21.1 PL (Windows)
 
 on:
   workflow_dispatch:
@@ -7,34 +7,36 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: 1. Pobierz najnowszy PdfCraft v0.21.1 (z oryginalnego repozytorium)
+      - name: 1. Pobierz najnowszy kod PdfCraft v0.21.1 (storytold/pdfcraft main)
         uses: actions/checkout@v4
         with:
           repository: storytold/pdfcraft
           ref: main
-          fetch-depth: 0
 
-      - name: 2. Wstrzyknij polski OCR z Twojej galezi pl-ocr
+      - name: 2. Dodaj jezyk polski (pl / pol) do Tesseracta i automatyzacji
         shell: pwsh
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          # 1. Dodanie ("pl", "pol") oraz ("pl", "Polish") w crates/ocr/src/tesseract.rs
+          $tessFile = "crates/ocr/src/tesseract.rs"
+          $content = Get-Content $tessFile -Raw
+          $content = $content -replace '\("nl",\s*"nld"\),', '("nl", "nld"), ("pl", "pol"),'
+          $content = $content -replace '\("nl",\s*"Dutch"\),', '("nl", "Dutch"), ("pl", "Polish"),'
           
-          # Pobierz Twoja wyedytowana galaz pl-ocr:
-          git fetch https://github.com/${{ github.repository }}.git pl-ocr:my-pl-ocr
-          
-          # Podmien TYLKO modul OCR z Twojej galezi pl-ocr:
-          git checkout my-pl-ocr -- crates/ocr
-          
-          # Odblokuj "pl" w najnowszym crates/automation (z wersji 0.21.1):
+          if ($content -notmatch '"pol"' -or $content -notmatch '"Polish"') {
+            throw "Nie udalo sie dopisac jezyka polskiego do tesseract.rs!"
+          }
+          Set-Content $tessFile $content -NoNewline
+
+          # 2. Odblokowanie "pl" w schematach CLI/automatyzacji (tam gdzie jest lista z "nl")
           Get-ChildItem -Path "crates/automation/src" -Filter "*.rs" -Recurse | ForEach-Object {
             $c = Get-Content $_.FullName -Raw
-            if ($c -match '"enum":\s*\["en"\]') {
-              $c = $c -replace '"enum":\s*\["en"\]', '"enum": ["en", "pl"]'
+            if ($c -match '"nl"' -and $c -notmatch '"pl"') {
+              $c = $c -replace '"nl"', '"nl", "pl"'
               Set-Content $_.FullName $c -NoNewline
+              Write-Host "Zaktualizowano schemat w:" $_.FullName
             }
           }
-            
+
       - name: 3. Zainstaluj Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
@@ -50,4 +52,4 @@ jobs:
           name: pdfcraft-0.21.1-pl-windows
           path: |
             target/release/pdfcraft.exe
-            target/release/pdfcraft-cli.exe.
+            target/release/pdfcraft-cli.exe
